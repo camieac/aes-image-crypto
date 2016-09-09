@@ -7,11 +7,11 @@ CFLAGS = -Wall
 
 SRCS = main.c
 
-all:
+all: clean
 	$(CC) $(CFLAGS) $(SRCS) -o $(APPNAME)
 
-bmp_image:
-	$(CC) $(CFLAGS) bmp_image.c -o bmp_image
+bmp_image: clean
+	$(CC) $(CFLAGS) bmp_image.c image.c -o bmp_image
 
 clean:
 	rm -f $(APPNAME)

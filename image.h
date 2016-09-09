@@ -11,6 +11,8 @@ struct image_properties {
   struct pixel **pixels; //2D array of pixels
   unsigned width;
   unsigned height;
-}
+};
+
+struct image_properties * image_properties_allocate_pixels(struct image_properties * image);
 
 #endif //ifdef IIMAGE_H
