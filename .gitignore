@@ -31,3 +31,7 @@
 # Debug files
 *.dSYM/
 *.su
+
+#Ignore obj folder
+obj/
+image-crypto
