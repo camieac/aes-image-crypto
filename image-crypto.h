@@ -1,0 +1,14 @@
+#ifndef IMAGE_CRYPTO_H
+#define IMAGE_CRYPTO_H
+
+#define MAX_FILE_SIZE_BYTES 1024
+
+enum ic_error_codes {
+	IC_ERROR = 0,
+	IC_SUCCESS,
+	IC_FILE_NOT_FOUND,
+	IC_NULL_POINTER,
+	MAX_IC_ERROR_CODE
+};
+
+#endif
