@@ -1,3 +1,21 @@
+/**
+* @file i18n.c
+* @author Cameron A. Craig
+* @date 23 Oct 2016
+* @copyright 2016 Cameron Craig
+* @brief Handles the importing of a JSON language pack.
+*        A dictionary is constucted containing key:value pairs,
+*        allowing applications to support multiple languagues.
+*
+* @details Parses a JSON string using JSMN. The following API is used:
+*             - i18n_init(): Takes a JSON string and parses into a string map.
+*             - i18n_get(): Get the word for the given key.
+*             - i18n_put(): Put a word into the string map that was not in
+*                           the original JSON language pack.
+*             - i18n_close(): Clean up all resources used by i18n.
+*          See doxygen comments for further detail.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +23,7 @@
 #include "jsmn.h"
 #include "strmap.h"
 #include "logging.h"
+#include "common.h"
 
 #include "i18n.h"
 
@@ -23,8 +42,8 @@ int i18n_init(struct i18n_h *i18n, char *language, char *filename, char * lang_p
 	i18n->language = language;
 	i18n->filename = filename;
 
+	i18n->buffer = malloc(1000);
 	i18n->str_map = sm_new(1000);//TODO:size?
-
 
 	jsmn_parser p;
 	jsmntok_t t[128]; /* We expect no more than 128 tokens */
@@ -42,55 +61,50 @@ int i18n_init(struct i18n_h *i18n, char *language, char *filename, char * lang_p
 		return 1;
 	}
 
-	/* Loop over all keys of the root object */
-	for (i = 1; i < r; i++) {
-		//Ensure language is what is expected
-		if (jsoneq(lang_pack, &t[i], "language") == 0) {
-			/* We may use strndup() to fetch string value */
-			if (strncmp(i18n->language, lang_pack + t[i+1].start, t[i+1].end-t[i+1].start) == 0){
-				LOG_INFO("Parsed language matches set language\n");
-			}else{
-				LOG_WARNING("Unexpected language has been parsed\n");
-			}
-			i++;
-		} else if (jsoneq(lang_pack, &t[i], "admin") == 0) {
-			/* We may additionally check if the value is either "true" or "false" */
-			printf("- Admin: %.*s\n", t[i+1].end-t[i+1].start,
-					lang_pack + t[i+1].start);
-			i++;
-		} else if (jsoneq(lang_pack, &t[i], "uid") == 0) {
-			/* We may want to do strtol() here to get numeric value */
-			printf("- UID: %.*s\n", t[i+1].end-t[i+1].start,
-					lang_pack + t[i+1].start);
-			i++;
-		} else if (jsoneq(lang_pack, &t[i], "groups") == 0) {
+	//Insert each key value language dictionary value into the string map
+	for(i = 0 ; i < r; i++){
+		jsmntype_t type = t[i].type;
+		if(jsoneq(lang_pack, &t[i], language) == 0){
+			sm_put(i18n->str_map, "language", language);
 			int j;
-			printf("- Groups:\n");
-			if (t[i+1].type != JSMN_ARRAY) {
-				continue; /* We expect groups to be an array of strings */
+			//Loop through the remaining tokens for dictionary items
+			for(j = i ; j < r; j++){
+				//The occurence of a JSMN_OBJECT guarantees two following tokens containing a key:value pair
+				if(t[j].type == JSMN_OBJECT){
+					int keylen = t[j+1].end - t[j+1].start;
+					int vallen = t[j+2].end - t[j+2].start;
+					char key[keylen + 1];// extra byte for NULL termination
+					char value[vallen + 1];// extra byte for NULL termination
+
+					//Copy the key and value to a temporary eritable bit of memory,
+					// to add a null termination before entering into the string map.
+					strlcpy(key, lang_pack + t[j+1].start, keylen + 1);
+					strlcpy(value, lang_pack + t[j+2].start, vallen + 1);
+
+					//Enter the key:value pair into the string map
+					sm_put(i18n->str_map, key, value);
+
+					//Skip the next 2 tokens, as these contain the key and value, already taken above.
+					i += 2;
+				}
 			}
-			for (j = 0; j < t[i+1].size; j++) {
-				jsmntok_t *g = &t[i+j+2];
-				printf("  * %.*s\n", g->end - g->start, lang_pack + g->start);
-			}
-			i += t[i+1].size + 1;
-		} else {
-			printf("Unexpected key: %.*s\n", t[i].end-t[i].start,
-					lang_pack + t[i].start);
+			break;
 		}
 	}
-
-	sm_put(i18n->str_map, "application name", "Test Application");
-
-	sm_delete(i18n->str_map);
-
 }
 
 int i18n_close(struct i18n_h *i18n){
-	return 0;
+	//sm_delete(i18n->str_map);
+	if(i18n->buffer != NULL){
+		free(i18n->buffer);
+		i18n->buffer = NULL;
+	}
 }
 
+int i18n_get(struct i18n_h *i18n, char * key, char *result, unsigned int result_len){
+	return sm_get(i18n->str_map, key, result, result_len);
+}
 
-char * i18n_get_string(){
-	return "no";
+int i18n_get_size(struct i18n_h *i18n, char * key){
+	return sm_get(i18n->str_map, key, NULL, 0);
 }

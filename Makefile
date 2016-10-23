@@ -4,12 +4,14 @@ AUTHOR = Cameron A. Craig
 
 CC = gcc
 CFLAGS = -Wall
+GTKFLAGS=-export-dynamic `pkg-config --cflags --libs gtk+-2.0`
+DEBUGFLAGS = -g
 
-SRCS = image-crypto.c files/files.c vendor/jsmn/jsmn.c i18n/i18n.c vendor/settings/settings.c vendor/strmap/strmap.c crypto/crypto.c
-INCS = -Ifiles/ -Ivendor/jsmn/ -Ii18n/ -Ivendor/settings/ -Ivendor/strmap/ -Ilib/ -Iimage/ -Icrypto/
+SRCS = image-crypto.c files/files.c vendor/jsmn/jsmn.c i18n/i18n.c vendor/settings/settings.c vendor/strmap/strmap.c crypto/crypto.c gui/gui.c lib/common.c
+INCS = -Ifiles/ -Ivendor/jsmn/ -Ii18n/ -Ivendor/settings/ -Ivendor/strmap/ -Ilib/ -Iimage/ -Icrypto/ -Igui/
 
 all: clean
-	$(CC) $(INCS) $(CFLAGS) $(SRCS) -o $(APPNAME)
+	$(CC) $(INCS) $(CFLAGS) $(SRCS) $(GTKFLAGS) $(DEBUGFLAGS) -o $(APPNAME)
 
 
 bmp_image_write: clean

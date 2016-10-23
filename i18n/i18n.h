@@ -7,7 +7,7 @@
 struct i18n_h {
 	char *language;
 	char *filename;
-
+	char *buffer;//TODO: Do this better? Keep all dictionary key:value pairs
 	StrMap *str_map;
 };
 

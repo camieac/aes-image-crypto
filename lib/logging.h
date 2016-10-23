@@ -7,6 +7,7 @@
 #define LOG_DEBUG(...) fprintf(stderr, __VA_ARGS__)
 #define LOG_INFO(...) fprintf(stdout, __VA_ARGS__)
 #define LOG_WARNING(...) fprintf(stdout, __VA_ARGS__)
+#define LOG_ERROR(...) fprintf(stdout, __VA_ARGS__)
 #define ERR() { perror("unknown"); fprintf(stderr, "line: %d\n", __LINE__); abort(); }
 
 #endif //ifdef LLOGGING_H

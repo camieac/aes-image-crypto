@@ -9,6 +9,7 @@
 #include "image.h"
 #include "crypto.h"
 #include "i18n.h"
+#include "gui.h"
 
 #include "settings.h"
 
@@ -50,11 +51,18 @@ int main(int argc, char *argv[]){
 
 	Settings *settings;
 	settings = settings_open(settings_file.f);
-	char language[10] = "en-gb"; //TODO:Size?
+  if(settings ==NULL){
+    LOG_ERROR("Failed to load settings.\n");
+  }
+	char language[10]; //TODO:Size?
 	int result;
 	result = settings_get(settings, "user", "language", language, sizeof(language));
+  if(result == 0){
+    LOG_ERROR("Failed to get language from settings file. Using en-gb.\n");
+    strncpy(language, "en-gb", 6);
+  }
+
 	LOG_INFO("Using %s language pack\n", language);
-	settings_delete(settings);
 	//Done with settings file, so close
 	file_close(&settings_file);
 
@@ -73,11 +81,18 @@ int main(int argc, char *argv[]){
 
 	struct i18n_h i18n;
 	i18n_init(&i18n, language, lang_filename, lang_pack_file.buffer);
+  file_close(&lang_pack_file);
 	//char * title = i18n_get_string(&i18n, "title");
 
+  char *title = malloc(100);
+  if(i18n_get(&i18n, "title", title, 100) == 0){
+    LOG_ERROR("Title get failed\n");
+  }
+  printf("Title: %s\n", title);
+  free(title);
 
-	file_close(&lang_pack_file);
-	i18n_close(&i18n);
+
+
 
 
 	//Read command arguments
@@ -143,63 +158,17 @@ int main(int argc, char *argv[]){
   };
 
   cbc_encrypt(&cd);
-	i18n_close(&i18n);
 
+
+  //Launch GUI
+  LOG_INFO("Launching GUI\n");
+  //Start the GUI, passing in the selected language pack.
+  gui_start(&i18n);
+
+	i18n_close(&i18n);
+  settings_delete(settings);
   LOG_INFO("Complete\n");
 	return EXIT_SUCCESS;
-#ifdef NOP
-	int i;
-	int r;
-	jsmn_parser p;
-	jsmntok_t t[128]; /* We expect no more than 128 tokens */
 
-	jsmn_init(&p);
-	r = jsmn_parse(&p, JSON_STRING, strlen(JSON_STRING), t, sizeof(t)/sizeof(t[0]));
-	if (r < 0) {
-		printf("Failed to parse JSON: %d\n", r);
-		return 1;
-	}
-
-	/* Assume the top-level element is an object */
-	if (r < 1 || t[0].type != JSMN_OBJECT) {
-		printf("Object expected\n");
-		return 1;
-	}
-
-	/* Loop over all keys of the root object */
-	for (i = 1; i < r; i++) {
-		if (jsoneq(JSON_STRING, &t[i], "user") == 0) {
-			/* We may use strndup() to fetch string value */
-			printf("- User: %.*s\n", t[i+1].end-t[i+1].start,
-					JSON_STRING + t[i+1].start);
-			i++;
-		} else if (jsoneq(JSON_STRING, &t[i], "admin") == 0) {
-			/* We may additionally check if the value is either "true" or "false" */
-			printf("- Admin: %.*s\n", t[i+1].end-t[i+1].start,
-					JSON_STRING + t[i+1].start);
-			i++;
-		} else if (jsoneq(JSON_STRING, &t[i], "uid") == 0) {
-			/* We may want to do strtol() here to get numeric value */
-			printf("- UID: %.*s\n", t[i+1].end-t[i+1].start,
-					JSON_STRING + t[i+1].start);
-			i++;
-		} else if (jsoneq(JSON_STRING, &t[i], "groups") == 0) {
-			int j;
-			printf("- Groups:\n");
-			if (t[i+1].type != JSMN_ARRAY) {
-				continue; /* We expect groups to be an array of strings */
-			}
-			for (j = 0; j < t[i+1].size; j++) {
-				jsmntok_t *g = &t[i+j+2];
-				printf("  * %.*s\n", g->end - g->start, JSON_STRING + g->start);
-			}
-			i += t[i+1].size + 1;
-		} else {
-			printf("Unexpected key: %.*s\n", t[i].end-t[i].start,
-					JSON_STRING + t[i].start);
-		}
-	}
-	return EXIT_SUCCESS;
-#endif
 
 }
