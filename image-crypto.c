@@ -25,7 +25,7 @@ static const char* const ic_error_strings[] = {
 	0
 }; // all const
 
-char * ic_err_to_string(int err){
+const char * ic_err_to_string(int err){
 	if(err > MAX_IC_ERROR_CODE){
 		return "Unknown";
 	}
@@ -36,6 +36,11 @@ char * ic_err_to_string(int err){
 
 }
 
+static void settings_iter(const char *key, const char *value, const void *obj)
+{
+    printf("settings item: %s, value: %s\n", key, value);
+}
+
 int main(int argc, char *argv[]){
 
 	int err;
@@ -44,16 +49,25 @@ int main(int argc, char *argv[]){
 
 	//Load settings
 	struct files_h settings_file;
-	if((err = file_open(&settings_file, "settings/default.conf")) != IC_SUCCESS){
+	if((err = file_open(&settings_file, "config.conf", FILE_READ)) != IC_SUCCESS){
 		fprintf(stderr, "error: %s", ic_err_to_string(err));
 	}
-	LOG_INFO("settings contents: %s, length: %d\n", settings_file.buffer, settings_file.bytes);
+	LOG_INFO("settings contents: %s, length: %ld\n", settings_file.buffer, settings_file.bytes);
 
 	Settings *settings;
+  settings = settings_new();
+
 	settings = settings_open(settings_file.f);
-  if(settings ==NULL){
+  if(settings == NULL){
     LOG_ERROR("Failed to load settings.\n");
   }
+
+  //Set the last startup time
+  settings_set(settings, "app", "last_used", "today");
+
+  LOG_INFO("Printing window section:\n");
+  settings_section_enum(settings, "window", settings_iter, NULL);
+
 	char language[10]; //TODO:Size?
 	int result;
 	result = settings_get(settings, "user", "language", language, sizeof(language));
@@ -73,11 +87,11 @@ int main(int argc, char *argv[]){
 	snprintf(lang_filename,30,"i18n/lang/%s.json",language);
 	LOG_INFO("Loading language pack from %s\n", lang_filename);
 
-	if((err = file_open(&lang_pack_file, lang_filename)) != IC_SUCCESS){
+	if((err = file_open(&lang_pack_file, lang_filename, FILE_READ)) != IC_SUCCESS){
 		fprintf(stderr, "error: %s", ic_err_to_string(err));
 	}
 	LOG_INFO("Opened %s\n", lang_filename);
-	LOG_INFO("lang pack contents: %s, length: %d\n", lang_pack_file.buffer, lang_pack_file.bytes);
+	LOG_INFO("lang pack contents: %s, length: %ld\n", lang_pack_file.buffer, lang_pack_file.bytes);
 
 	struct i18n_h i18n;
 	i18n_init(&i18n, language, lang_filename, lang_pack_file.buffer);
@@ -125,6 +139,10 @@ int main(int argc, char *argv[]){
   unsigned char *enc_image_buffer;
   unsigned image_data_length;
 
+  image_data = (unsigned char *) "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff";
+  image_data_length = 16;
+  enc_image_buffer = malloc(16);
+
   //Set key & IV for CBC mode encryption
   LOG_INFO("Using default keys\n");
   unsigned char key[16] = "\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b";
@@ -135,7 +153,7 @@ int main(int argc, char *argv[]){
   if (alg == AES_CBC){
     alg_inputs.cbc.key.key = key;
     alg_inputs.cbc.key.key_length = sizeof(key);
-    LOG_DEBUG("sizeof(key): %d\n", sizeof(key));
+    LOG_DEBUG("sizeof(key): %lu\n", sizeof(key));
 
     alg_inputs.cbc.iv.iv = iv;
     alg_inputs.cbc.iv.iv_length = sizeof(iv);
@@ -159,13 +177,24 @@ int main(int argc, char *argv[]){
 
   cbc_encrypt(&cd);
 
-
+  free(enc_image_buffer);
   //Launch GUI
   LOG_INFO("Launching GUI\n");
   //Start the GUI, passing in the selected language pack.
-  gui_start(&i18n);
+  gui_start(&i18n, settings);
 
 	i18n_close(&i18n);
+
+  //Save settings
+  struct files_h settings_write_file;
+  if((err = file_open(&settings_write_file, "config.conf", FILE_READ | FILE_WRITE)) != IC_SUCCESS){
+    fprintf(stderr, "error: %s", ic_err_to_string(err));
+  }
+
+  if(!settings_save(settings, settings_write_file.f)){
+    LOG_ERROR("Could not save settings!\n");
+  };
+  file_close(&settings_write_file);
   settings_delete(settings);
   LOG_INFO("Complete\n");
 	return EXIT_SUCCESS;

@@ -4,8 +4,17 @@
 #include "files.h"
 #include "../image-crypto.h"
 
-int file_open(struct files_h *f, char *filename){
-	if((f->f = fopen (filename, "rb")) == NULL){
+int file_open(struct files_h *f, char *filename, int flags){
+	char * open_mode;
+	if((flags & FILE_READ) && (flags & FILE_WRITE)){
+		open_mode = "r+"; //Read and write
+	}else if (flags & FILE_READ){
+		open_mode = "r"; //Read only
+	}else{
+		open_mode = "r"; //Default to read only
+	}
+
+	if((f->f = fopen (filename, open_mode)) == NULL){
 		return IC_FILE_NOT_FOUND;
 	};
 
@@ -20,13 +29,14 @@ int file_open(struct files_h *f, char *filename){
   }
 
 	if(fread(f->buffer, 1, f->bytes, f->f) != f->bytes){
-		return IC_ERROR;
+		return FILES_ERROR;
 	}
 
-	return IC_SUCCESS;
+	return FILES_SUCCESS;
 }
 
 int file_close(struct files_h *f){
 	fclose(f->f);
 	free(f->buffer);
+	return FILES_SUCCESS;
 }

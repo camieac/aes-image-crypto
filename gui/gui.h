@@ -2,6 +2,11 @@
 #define MENU_BAR_H
 
 #include <gtk/gtk.h>
+#include "settings.h"
+#include "i18n.h"
+
+#define GUI_ERROR     0
+#define GUI_SUCCESS   0
 
 struct menu_bar_s {
   GtkWidget *window;
@@ -28,5 +33,8 @@ struct menu_bar_s {
 
 
 };
+
+//Function Definitions
+int gui_start(struct i18n_h *i18n, Settings *settings);
 
 #endif

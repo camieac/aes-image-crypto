@@ -19,10 +19,6 @@ char * alg_to_string(enum cipher_alg alg){
   }
 }
 
-int cbc_encrypt(struct cipher_data *cd){
-  return cipher(cd);
-}
-
 int cipher(struct cipher_data *cd){
 
 	struct sockaddr_alg sa = {
@@ -117,14 +113,14 @@ int cipher(struct cipher_data *cd){
 	if (ret != cd->text_length) {
 	  if (ret == -1) perror("sendmsg");
 	  fprintf(stderr, "%d: written %d, expected %d\n", __LINE__, ret, cd->text_length);
-	  return;
+	  return CRYPTO_ERROR;
         }
 
 	ret = read(connfd, cd->ciphertext, cd->text_length);
 	if (ret != cd->text_length) {
 	  if (ret == -1) perror("read");
 	  fprintf(stderr, "%d: read %d, expected %d\n", __LINE__, ret, cd->text_length);
-	  return;
+	  return CRYPTO_ERROR;
         }
 
 	if( sockfd != -1 ){
@@ -137,4 +133,8 @@ int cipher(struct cipher_data *cd){
 
 
 	return 1;
+}
+
+int cbc_encrypt(struct cipher_data *cd){
+  return cipher(cd);
 }

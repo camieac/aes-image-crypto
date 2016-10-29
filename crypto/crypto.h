@@ -9,6 +9,8 @@
 #define SOL_ALG 279
 #endif
 
+#define CRYPTO_ERROR 0
+
 struct key {
   unsigned char *key;
   unsigned key_length;

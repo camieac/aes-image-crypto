@@ -63,7 +63,7 @@ int i18n_init(struct i18n_h *i18n, char *language, char *filename, char * lang_p
 
 	//Insert each key value language dictionary value into the string map
 	for(i = 0 ; i < r; i++){
-		jsmntype_t type = t[i].type;
+		//jsmntype_t type = t[i].type;
 		if(jsoneq(lang_pack, &t[i], language) == 0){
 			sm_put(i18n->str_map, "language", language);
 			int j;
@@ -91,6 +91,7 @@ int i18n_init(struct i18n_h *i18n, char *language, char *filename, char * lang_p
 			break;
 		}
 	}
+	return I18N_SUCCESS;
 }
 
 int i18n_close(struct i18n_h *i18n){
@@ -99,6 +100,7 @@ int i18n_close(struct i18n_h *i18n){
 		free(i18n->buffer);
 		i18n->buffer = NULL;
 	}
+	return I18N_SUCCESS;
 }
 
 int i18n_get(struct i18n_h *i18n, char * key, char *result, unsigned int result_len){

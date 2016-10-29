@@ -2,6 +2,8 @@
 #include "gui.h"
 
 #include "i18n.h"
+#include "settings.h"
+#include "logging.h"
 
 void gui_view_image(struct menu_bar_s *mb, char * filename){
   gtk_image_set_from_file (GTK_IMAGE (mb->image.image_widget), filename);
@@ -10,14 +12,14 @@ void gui_view_image(struct menu_bar_s *mb, char * filename){
 void gui_new_handler(GtkWidget *widget, gpointer data) {
   struct menu_bar_s *mb = (struct menu_bar_s *) data;
 
-  gtk_image_clear(mb->image.image_widget);
+  gtk_image_clear((GtkImage *) mb->image.image_widget);
 
 }
 void file_open_handler(GtkWidget *widget, gpointer data) {
   struct menu_bar_s *mb = (struct menu_bar_s *) data;
 
   mb->open_dialog.open_dialog = gtk_file_chooser_dialog_new ("Open File",
-    mb->window,
+    (GtkWindow *) mb->window,
     mb->open_dialog.action,
     "_Cancel",
     GTK_RESPONSE_CANCEL,
@@ -55,10 +57,8 @@ void m_close(struct menu_bar_s *mb){
 
 }
 
-int gui_start(struct i18n_h *i18n){
+int gui_start(struct i18n_h *i18n, Settings *settings){
   struct menu_bar_s mb;
-  GtkWidget *editMenu;
-  GtkWidget *editPreferencesMi;
 
   int buffer_size;
 
@@ -66,7 +66,15 @@ int gui_start(struct i18n_h *i18n){
 
   mb.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_position(GTK_WINDOW(mb.window), GTK_WIN_POS_CENTER);
-  gtk_window_set_default_size(GTK_WINDOW(mb.window), 300, 200);
+
+  //Get default window size from settings
+  LOG_INFO("Getting window width and height.\n");
+  int width = settings_get_int(settings, "window", "width");
+  int height = settings_get_int(settings, "window", "height");
+  LOG_INFO("width: %d, height: %d\n", width, height);
+
+  gtk_window_set_default_size(GTK_WINDOW(mb.window), width, height);
+  gtk_window_set_resizable (GTK_WINDOW(mb.window), FALSE);
 
   buffer_size = i18n_get_size(i18n, "title");
   char title_text[buffer_size];
@@ -127,4 +135,5 @@ int gui_start(struct i18n_h *i18n){
 
   m_close(&mb);
   printf("done\n");
+  return GUI_SUCCESS;
 }
