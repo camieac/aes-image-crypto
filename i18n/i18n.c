@@ -27,6 +27,17 @@
 
 #include "i18n.h"
 
+static char *i18n_lang_key;
+static struct i18n_h *i18n_handle;
+
+char * _(char *key){
+
+	int len = i18n_get_size(i18n_handle, key);
+	char *result = malloc(len);
+	i18n_get(i18n_handle, key, result, len);
+	return result;
+}
+
 static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start &&
 			strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
@@ -38,6 +49,9 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 int i18n_init(struct i18n_h *i18n, char *language, char *filename, char * lang_pack){
 	int i;
 	int r;
+
+	i18n_lang_key = language;
+	i18n_handle = i18n;
 
 	i18n->language = language;
 	i18n->filename = filename;

@@ -49,9 +49,12 @@ int main(int argc, char *argv[]){
 
 	//Load settings
 	struct files_h settings_file;
-	if((err = file_open(&settings_file, "config.conf", FILE_READ)) != IC_SUCCESS){
+	if((err = file_open(&settings_file, "config.conf", FILE_READ)) != FILES_SUCCESS){
 		fprintf(stderr, "error: %s", ic_err_to_string(err));
 	}
+  if(file_read(&settings_file) != FILES_SUCCESS){
+    LOG_ERROR("Failed to read settings file.\n");
+  }
 	LOG_INFO("settings contents: %s, length: %ld\n", settings_file.buffer, settings_file.bytes);
 
 	Settings *settings;
@@ -90,6 +93,9 @@ int main(int argc, char *argv[]){
 	if((err = file_open(&lang_pack_file, lang_filename, FILE_READ)) != IC_SUCCESS){
 		fprintf(stderr, "error: %s", ic_err_to_string(err));
 	}
+  if(file_read(&lang_pack_file) != FILES_SUCCESS){
+    LOG_ERROR("Failed to read lang pack\n");
+  }
 	LOG_INFO("Opened %s\n", lang_filename);
 	LOG_INFO("lang pack contents: %s, length: %ld\n", lang_pack_file.buffer, lang_pack_file.bytes);
 
@@ -141,6 +147,7 @@ int main(int argc, char *argv[]){
 
   image_data = (unsigned char *) "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff";
   image_data_length = 16;
+  enc_image_buffer = malloc(16);
   enc_image_buffer = malloc(16);
 
   //Set key & IV for CBC mode encryption

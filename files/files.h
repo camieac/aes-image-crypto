@@ -15,5 +15,6 @@ struct files_h {
 
 //Function Definitions
 int file_open(struct files_h *f, char *filename, int flags);
+int file_read(struct files_h *f);
 int file_close(struct files_h *f);
 #endif

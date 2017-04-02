@@ -6,15 +6,57 @@
 #include "logging.h"
 
 void gui_view_image(struct menu_bar_s *mb, char * filename){
-  gtk_image_set_from_file (GTK_IMAGE (mb->image.image_widget), filename);
+  gtk_image_set_from_file (GTK_IMAGE(mb->image.image_widget), filename);
+}
+
+void gui_close_message(GtkWindow *parent, gchar *message){
+ GtkWidget *dialog, *label, *content_area;
+ GtkDialogFlags flags;
+
+ // Create the widgets
+ flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+ dialog = gtk_dialog_new_with_buttons ("Message",
+                                       parent,
+                                       flags,
+                                       "Yes",
+                                       GTK_RESPONSE_ACCEPT,
+                                       "No",
+                                       GTK_RESPONSE_REJECT,
+                                       NULL);
+ content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+ label = gtk_label_new (message);
+
+ // Ensure that the dialog box is destroyed when the user responds
+ g_signal_connect_swapped (dialog,
+                           "response",
+                           G_CALLBACK (gtk_widget_destroy),
+                           dialog);
+
+ // Add the label, and show everything we’ve added
+
+ gtk_container_add (GTK_CONTAINER (content_area), label);
+ gtk_widget_show_all (dialog);
+ gint result = gtk_dialog_run (GTK_DIALOG (dialog));
+switch (result)
+  {
+    case GTK_RESPONSE_ACCEPT:
+       LOG_INFO (_("Yes"));
+       gtk_main_quit();
+       break;
+    default:
+       LOG_INFO (_("No"));
+       break;
+  }
+
 }
 
 void gui_new_handler(GtkWidget *widget, gpointer data) {
   struct menu_bar_s *mb = (struct menu_bar_s *) data;
 
-  gtk_image_clear((GtkImage *) mb->image.image_widget);
+  gtk_image_clear(GTK_IMAGE(mb->image.image_widget));
 
 }
+
 void file_open_handler(GtkWidget *widget, gpointer data) {
   struct menu_bar_s *mb = (struct menu_bar_s *) data;
 
@@ -42,6 +84,11 @@ void file_open_handler(GtkWidget *widget, gpointer data) {
 
   }
   gtk_widget_destroy (mb->open_dialog.open_dialog);
+}
+
+void gui_quit_handler(GtkWidget *widget, gpointer data) {
+  gui_close_message(GTK_WINDOW(widget), "Are you sure you want to quit?");
+  //gtk_main_quit();
 }
 
 void open_file(struct menu_bar_s *mb){
@@ -74,6 +121,7 @@ int gui_start(struct i18n_h *i18n, Settings *settings){
   LOG_INFO("width: %d, height: %d\n", width, height);
 
   gtk_window_set_default_size(GTK_WINDOW(mb.window), width, height);
+  gtk_widget_set_size_request(mb.window, width, height);
   gtk_window_set_resizable (GTK_WINDOW(mb.window), FALSE);
 
   buffer_size = i18n_get_size(i18n, "title");
@@ -118,10 +166,10 @@ int gui_start(struct i18n_h *i18n, Settings *settings){
   gtk_box_pack_start(GTK_BOX(mb.vbox), mb.image.image_widget, FALSE, FALSE, 0);
 
   g_signal_connect(G_OBJECT(mb.window), "destroy",
-        G_CALLBACK(gtk_main_quit), NULL);
+        G_CALLBACK(gui_quit_handler), NULL);
 
   g_signal_connect(G_OBJECT(mb.file_menu.quit_mi), "activate",
-        G_CALLBACK(gtk_main_quit), NULL);
+        G_CALLBACK(gui_quit_handler), NULL);
 
   g_signal_connect(G_OBJECT(mb.file_menu.open_mi), "activate",
       G_CALLBACK(file_open_handler), (gpointer) &mb);
